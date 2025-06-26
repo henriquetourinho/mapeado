@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapeado Salvador | Fiscalização Cidadã</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --bg-darker: #161b22;
+            --border: #30363d;
+            --text-light: #c9d1d9;
+            --text-lighter: #ffffff;
+            --primary: #58a6ff;
+            --primary-light: #79c0ff;
+            --accent: #ff7b72;
+            --health: #58a6ff;
+            --corruption: #ff7b72;
+            --infra: #f0883e;
+            --security: #db61a2;
+            --transport: #3fb950;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--bg-darker);
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            margin-right: 0.5rem;
+        }
+
+        nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        main {
+            padding: 6rem 1.5rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            color: var(--text-lighter);
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+
+        h2 {
+            font-size: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-top: 3rem;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            max-width: 800px;
+        }
+
+        .countdown-container {
+            background-color: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 3rem 0;
+        }
+
+        .countdown {
+            font-family: 'Fira Code', monospace;
+            font-size: 2rem;
+            color: var(--primary-light);
+            margin: 1rem 0;
+        }
+
+        .map-container {
+            height: 600px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin: 3rem 0;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            background-color: var(--bg-dark);
+        }
+
+        .legend {
+            background-color: rgba(22, 27, 34, 0.9);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            font-size: 0.9rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .legend h4 {
+            margin-bottom: 0.8rem;
+            color: var(--text-lighter);
+            font-size: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            border: 2px solid var(--bg-darker);
+        }
+
+        .repo-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary);
+            text-decoration: none;
+            margin-top: 1rem;
+            border: 1px solid var(--primary);
+            padding: 0.7rem 1.5rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .repo-link:hover {
+            background-color: rgba(88, 166, 255, 0.1);
+        }
+
+        footer {
+            background-color: var(--bg-darker);
+            padding: 2rem 1.5rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .strategic-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .point-card {
+            background-color: var(--bg-darker);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .point-card h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .point-icon {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .point-type {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .type-health {
+            background-color: rgba(88, 166, 255, 0.1);
+            color: var(--health);
+            border-left: 3px solid var(--health);
+        }
+
+        .type-corruption {
+            background-color: rgba(255, 123, 114, 0.1);
+            color: var(--corruption);
+            border-left: 3px solid var(--corruption);
+        }
+
+        .type-infra {
+            background-color: rgba(240, 136, 62, 0.1);
+            color: var(--infra);
+            border-left: 3px solid var(--infra);
+        }
+
+        .type-security {
+            background-color: rgba(219, 97, 162, 0.1);
+            color: var(--security);
+            border-left: 3px solid var(--security);
+        }
+
+        .type-transport {
+            background-color: rgba(63, 185, 80, 0.1);
+            color: var(--transport);
+            border-left: 3px solid var(--transport);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.7rem;
+            }
+            
+            .countdown {
+                font-size: 1.5rem;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+            
+            .legend {
+                bottom: 10px;
+                right: 10px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="#" class="logo">
+                <span class="logo-icon">🗺️</span>
+                <span>Mapea<span>do</span></span>
+            </a>
+            <nav>
+                <a href="#about">Sobre</a>
+                <a href="#map">Mapa</a>
+                <a href="#points">Pontos Estratégicos</a>
+                <a href="#contact">Contato</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="about">
+            <h1>Controle Social em Salvador</h1>
+            <p>Plataforma colaborativa para fiscalização pública e combate à corrupção</p>
+            
+            <p>O <strong>Mapeado</strong> é uma ferramenta independente de monitoramento cidadão que visa <strong>combater a corrupção</strong> e melhorar a gestão pública através da participação popular.</p>
+            
+            <p>Nossa plataforma permite <strong>mapear, denunciar e acompanhar</strong> obras públicas, serviços essenciais e pontos estratégicos da cidade, criando um histórico de fiscalização coletiva.</p>
+            
+            <div class="countdown-container">
+                <h3>Lançamento em breve</h3>
+                <p>Estamos preparando tudo para você. Aguarde nosso lançamento:</p>
+                <div class="countdown" id="countdown">⏳ Calculando tempo restante...</div>
+                <p>Enquanto isso, você pode acompanhar o desenvolvimento:</p>
+                <a href="https://github.com/henriquetourinho/mapeado" class="repo-link" target="_blank">
+                    Acessar repositório no GitHub
+                </a>
+            </div>
+        </section>
+
+        <section id="map">
+            <h2>Mapa de Fiscalização</h2>
+            <p>Visualização dos pontos estratégicos e denúncias registradas em Salvador</p>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="legend">
+                    <h4>Legenda</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--health);"></div>
+                        <span>Saúde</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--corruption);"></div>
+                        <span>Denúncias</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--infra);"></div>
+                        <span>Infraestrutura</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--security);"></div>
+                        <span>Segurança</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--transport);"></div>
+                        <span>Transporte</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="points">
+            <h2>Pontos Estratégicos Mapeados</h2>
+            <p>Principais locais de interesse para controle social em Salvador</p>
+            
+            <div class="strategic-points">
+                <div class="point-card">
+                    <span class="point-type type-health">SAÚDE</span>
+                    <h4><span class="point-icon">🏥</span> Hospital Geral do Estado</h4>
+                    <p>Principal hospital público com histórico de denúncias de falta de medicamentos e superfaturamento em compras.</p>
+                </div>
+                
+                <div class="point-card">
+                    <span class="point-type type-corruption">DENÚNCIA</span>
+                    <h4><span class="point-icon">⚠️</span> Obra do BRT - Paralela</h4>
+                    <p>Obra paralisada há 8 meses com indícios de superfaturamento. Contrato original previa conclusão para dez/2022.</p>
+                </div>
+                
+                <div class="point-card">
+                    <span class="point-type type-infra">INFRAESTRUTURA</span>
+                    <h4><span class="point-icon">🏗️</span> Estação de Tratamento de Água</h4>
+                    <p>Responsável pelo abastecimento da região central. Relatos de intermitência no fornecimento.</p>
+                </div>
+                
+                <div class="point-card">
+                    <span class="point-type type-security">SEGURANÇA</span>
+                    <h4><span class="point-icon">👮</span> Delegacia Central</h4>
+                    <p>Baixa resolutividade de casos. Denúncias de morosidade no atendimento.</p>
+                </div>
+                
+                <div class="point-card">
+                    <span class="point-type type-transport">TRANSPORTE</span>
+                    <h4><span class="point-icon">🚌</span> Terminal Rodoviário</span></h4>
+                    <p>Problemas crônicos de manutenção e limpeza. Contratos de concessão em análise.</p>
+                </div>
+                
+                <div class="point-card">
+                    <span class="point-type type-corruption">DENÚNCIA</span>
+                    <h4><span class="point-icon">⚠️</span> Secretaria de Infraestrutura</h4>
+                    <p>Licitações suspeitas para compra de materiais de construção. Caso sob investigação.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contact">
+        <p>Contato: mapeado@riseup.net</p>
+        <p>© 2023 Mapeado Salvador - Plataforma independente de controle social</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize dark map
+            const map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([-12.9714, -38.5014], 12);
+            
+            // Dark map tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors, © CARTO'
+            }).addTo(map);
+            
+            // Add zoom controls with dark style
+            L.control.zoom({
+                position: 'topright'
+            }).addTo(map);
+
+            // Strategic points in Salvador
+            const strategicPoints = [
+                // Health
+                {
+                    lat: -12.9336,
+                    lng: -38.5101,
+                    title: "Hospital Geral do Estado",
+                    description: "Denúncias de falta de medicamentos e superfaturamento",
+                    type: "health",
+                    iconColor: "var(--health)"
+                },
+                {
+                    lat: -12.9823,
+                    lng: -38.4817,
+                    title: "Posto de Saúde da Liberdade",
+                    description: "Reforma paralisada há 1 ano",
+                    type: "health",
+                    iconColor: "var(--health)"
+                },
+                
+                // Corruption
+                {
+                    lat: -12.9749,
+                    lng: -38.5045,
+                    title: "Prefeitura Municipal",
+                    description: "Denúncias de nepotismo no setor de compras",
+                    type: "corruption",
+                    iconColor: "var(--corruption)"
+                },
+                {
+                    lat: -12.9083,
+                    lng: -38.3284,
+                    title: "Secretaria de Infraestrutura",
+                    description: "Licitação suspeita para materiais de construção",
+                    type: "corruption",
+                    iconColor: "var(--corruption)"
+                },
+                
+                // Infrastructure
+                {
+                    lat: -12.9102,
+                    lng: -38.3371,
+                    title: "Obra do BRT - Paralela",
+                    description: "Paralisada há 8 meses. Investimento de R$ 120 mi",
+                    type: "infra",
+                    iconColor: "var(--infra)"
+                },
+                {
+                    lat: -12.9256,
+                    lng: -38.4887,
+                    title: "Creche Municipal",
+                    description: "Obra abandonada há 1 ano. Verba já empenhada",
+                    type: "infra",
+                    iconColor: "var(--infra)"
+                },
+                
+                // Security
+                {
+                    lat: -12.9768,
+                    lng: -38.5092,
+                    title: "Ministério Público",
+                    description: "Órgão responsável por investigar irregularidades",
+                    type: "security",
+                    iconColor: "var(--security)"
+                },
+                {
+                    lat: -12.9784,
+                    lng: -38.4768,
+                    title: "Tribunal de Contas",
+                    description: "Fiscaliza aplicação de recursos públicos",
+                    type: "security",
+                    iconColor: "var(--security)"
+                },
+                
+                // Transport
+                {
+                    lat: -12.9086,
+                    lng: -38.3223,
+                    title: "Terminal Rodoviário",
+                    description: "Problemas crônicos de manutenção",
+                    type: "transport",
+                    iconColor: "var(--transport)"
+                },
+                {
+                    lat: -12.9364,
+                    lng: -38.3900,
+                    title: "Porto de Salvador",
+                    description: "Contratos de concessão em análise",
+                    type: "transport",
+                    iconColor: "var(--transport)"
+                }
+            ];
+
+            // Add markers to the map
+            strategicPoints.forEach(point => {
+                const customIcon = L.divIcon({
+                    className: 'custom-icon',
+                    html: `<div style="background-color: ${point.iconColor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--bg-dark); box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                L.marker([point.lat, point.lng], {icon: customIcon})
+                    .addTo(map)
+                    .bindPopup(`<b style="color: ${point.iconColor}">${point.title}</b><br><small>${point.description}</small>`);
+            });
+
+            // Countdown timer (2 months from now)
+            function updateCountdown() {
+                const now = new Date();
+                const launchDate = new Date();
+                launchDate.setMonth(now.getMonth() + 2);
+                
+                const diff = launchDate - now;
+                
+                if (diff <= 0) {
+                    document.getElementById('countdown').textContent = "🚀 Mapeado Salvador está no ar!";
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdown').textContent = 
+                    `⏳ Lançamento em: ${days}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+            }
+            
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        });
+    </script>
+</body>
+</html>
